@@ -192,11 +192,11 @@
   }
   function boardView() {
     var all = scoredRows(), rows = sorted(visible(all));
-    var strip = el('p', { class: 'modelstrip', text: 'implied = TVL × comp (category median mcap/TVL of live tokens, shrunk k=' + D.k.shrink_k + ', clamp 0.05–8) × growth (7d change) × maturity (tokenless age) · est. claim = implied × ' + Math.round(D.k.airdrop_share * 100) + '% airdrop ÷ wallets ≈ TVL/25K' });
+    var strip = el('p', { class: 'modelstrip', text: 'implied = TVL × comp (shrunk category median mcap/TVL, k=' + D.k.shrink_k + ', clamp 0.05–8) × growth (7d) × maturity (tokenless age) · claim = implied × ' + Math.round(D.k.airdrop_share * 100) + '% airdrop ÷ wallets ≈ TVL/25K' });
     var frag = el('div', {}, [stats(rows), strip, controls(rows.length, all.length)]);
-    if (state.sandbox) frag.appendChild(el('div', { class: 'note', text: 'Sandbox what-if: ranks below use your adjusted constants, not the shipped board. Reset on the Model tab to return to radar-2 as submitted.' }));
+    if (state.sandbox) frag.appendChild(el('div', { class: 'note', text: 'Sandbox what-if: ranks below use your adjusted constants. Reset on the Model tab.' }));
     frag.appendChild(rows.length ? boardTable(rows) : el('div', { class: 'tablewrap' }, [el('div', { class: 'empty', text: 'No protocol matches these filters.' })]));
-    frag.appendChild(el('p', { class: 'fineprint', text: 'Implied launch = the model’s conditional FDV claim if a token launched on this record; est. claim = 10% airdrop pool ÷ estimated eligible wallets. Click any row for the full breakdown and farm plan. “Records no token” is DefiLlama’s record, not proof a token cannot exist.' }));
+    frag.appendChild(el('p', { class: 'fineprint', text: 'Conditional FDV claim on this record, not a prediction; claim = 10% pool ÷ est. wallets. Click a row for breakdown + farm plan.' }));
     return frag;
   }
 
@@ -259,17 +259,23 @@
       el('h3', { text: 'Value breakdown — radar-2' }), calc,
       el('h3', { text: 'Where the multiple comes from' }), compKv,
       el('h3', { text: 'What a farm could pay (conditional)' }), air,
-      el('p', { class: 'fineprint', text: 'Historical base rates: median airdrop ≈ 10% of supply, median payout ≈ $1,000, 10th percentile ≈ $400; wallet count drives the per-wallet share (Jito 9,852 wallets vs Starknet 1.3M). The wallet estimate is a TVL proxy, not a census. This is a conditional claim on the snapshot’s record, never a prediction that a token will issue.' }),
-      el('h3', { text: 'Farm plan — ' + steps.length + ' steps · conditional claim est ' + fmtUsd(s.median_claim_usd) }),
+      el('p', { class: 'fineprint', text: 'Base rates: median airdrop ≈ 10% of supply, median payout ≈ $1,000; wallets est. is a TVL proxy, not a census (Jito 9,852 vs Starknet 1.3M wallets).' }),
+      el('h3', { text: 'Farm plan — ' + steps.length + ' steps · p50 claim ' + fmtUsd(s.median_claim_usd) }),
       el('div', { class: 'airdrop' }, [
         el('div', { class: 'cell' }, [el('div', { class: 'lbl', text: 'Setup gas & fees' }), el('div', { class: 'num', text: '$' + tot.fees_usd.toFixed(2) })]),
         el('div', { class: 'cell' }, [el('div', { class: 'lbl', text: 'Capital in position' }), el('div', { class: 'num', text: fmtUsd(tot.capital_usd) })]),
         el('div', { class: 'cell' }, [el('div', { class: 'lbl', text: 'Active setup time' }), el('div', { class: 'num', text: fmtMin(tot.active_min) })]),
         el('div', { class: 'cell' }, [el('div', { class: 'lbl', text: 'Hold window' }), el('div', { class: 'num', text: tot.hold_days + ' days' })])
       ]),
+      el('div', { class: 'airdrop' }, [
+        el('div', { class: 'cell' }, [el('div', { class: 'lbl', text: 'Net p50 after fees' }), el('div', { class: 'num', text: fmtUsd(s.median_claim_usd - tot.fees_usd) })]),
+        el('div', { class: 'cell' }, [el('div', { class: 'lbl', text: 'Break-even airdrop share' }), el('div', { class: 'num', text: (100 * tot.fees_usd * s.wallets_est / s.implied).toFixed(3) + '%' })]),
+        el('div', { class: 'cell' }, [el('div', { class: 'lbl', text: 'Claim per $1 fee' }), el('div', { class: 'num', text: '×' + Math.round(s.median_claim_usd / tot.fees_usd) })]),
+        el('div', { class: 'cell' }, [el('div', { class: 'lbl', text: 'No-drop loss' }), el('div', { class: 'num', text: '−$' + tot.fees_usd.toFixed(2) })])
+      ]),
+      el('p', { class: 'fineprint', text: 'Break-even share = fees × wallets ÷ implied FDV; model assumes 10%. Capital returns on unwind.' }),
       stepList,
       el('div', { class: 'note risk', text: P.riskNote(r.cat) }),
-      el('p', { class: 'fineprint', text: 'A real airdrop never asks you to pay to claim. Verify every link against the protocol’s own docs; comments and DMs are not sources.' })
     ]);
     dialog.appendChild(head); dialog.appendChild(body);
     if (!dialog.open) dialog.showModal();

@@ -39,3 +39,10 @@ Every number the model uses is either a field of the sealed DefiLlama snapshot (
 15. **DefiLlama new-listing lead lists.** https://apify.com/yadroo/defillama-protocols/examples/new-defi-protocols-listed-in-2026 — filtering fresh DefiLlama listings by TVL floor and 7d change is an established early-sourcing pattern; the radar's EMERGING tier (≤120 days tokenless and growing) is that pattern applied to the sealed snapshot, surfaced as a filter and a masthead count.
 
 Round 2 also adds setup economics to every plan (gas & fees, capital in position, active setup time, hold window), accumulated in `dashboard/plans.js` from the same per-step figures the step strings state, and shows the model equation on the board itself so the first screen carries the value model, not only the Model tab.
+
+## Round 3 — the farm decision, not just the farm steps
+
+16. **Break-even airdrop share.** `fees × wallets ÷ implied FDV` is the airdrop share at which the p50 claim just covers setup gas & fees; the detail view states it beside the model's 10% assumption (EarlyThunder's median, https://earlythunder.com/research/airdrop-performance-data) so a reader sees the headroom, not just the payout. Same arithmetic as the points market's price = expected airdrop value × accrual share (DeSpread, ref 12): inverted, it asks "how small can the drop be before this farm stops paying for itself".
+17. **No-drop downside.** Capital returns on unwind, so a farm that never drops loses fees and active time only (plus the contract risk each plan's risk note states). Stating the downside next to the p50 claim is the honest form of the conditional claim: high-FDV launches decay (DL News / Gate Learn, ref 14), so the decision number is the break-even share and the fee loss, never the headline payout.
+
+Round 3 shows both in the detail view's plan header (net p50 after fees, break-even share, claim per $1 fee, no-drop loss), computed in `dashboard/app.js` from the same model score and per-step fee totals `main.ts` writes, and trims duplicated fineprint so all five dashboard source files still fit the dossier's 65,536-byte text whole.
