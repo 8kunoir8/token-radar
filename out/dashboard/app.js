@@ -26,6 +26,7 @@
     if (d >= 60) return Math.round(d / 30) + 'mo';
     return d + 'd';
   }
+  function fmtMin(m) { return m < 60 ? m + ' min' : (m / 60).toFixed(1) + ' h'; }
   function el(tag, attrs, kids) {
     var e = document.createElement(tag);
     if (attrs) Object.keys(attrs).forEach(function (k) {
@@ -41,6 +42,7 @@
   }
   function g7class(n) { return n === null || n === undefined ? 'flat' : n > 0.5 ? 'up' : n < -0.5 ? 'down' : 'flat'; }
   function isRising(r) { return r.tier === 'early' && (r.g7 || 0) >= 15; }
+  function isEmerging(r) { return r.tier === 'early' && r.age !== null && r.age <= 120 && (r.g7 || 0) > 0; }
 
   // --- sandbox: re-score every row with adjusted constants, same model code ----
   function protoOf(r) {
@@ -84,6 +86,7 @@
       if (state.tier === 'watchlist' && r.tier !== 'watchlist') return false;
       if (state.tier === 'early' && r.tier !== 'early') return false;
       if (state.tier === 'rising' && !isRising(r)) return false;
+      if (state.tier === 'emerging' && !isEmerging(r)) return false;
       if (state.cat !== 'all' && (r.cat || 'Uncategorized') !== state.cat) return false;
       if (state.chain !== 'all' && r.chains.indexOf(state.chain) < 0) return false;
       if (q && (r.name + ' ' + r.slug + ' ' + (r.cat || '')).toLowerCase().indexOf(q) < 0) return false;
@@ -148,6 +151,7 @@
         el('td', {}, [
           el('span', { class: 'dot ' + r.tier }), el('span', { class: 'pname', text: r.name }),
           isRising(r) ? el('span', { class: 'rising', text: 'rising' }) : null,
+          isEmerging(r) ? el('span', { class: 'rising new', text: 'emerging' }) : null,
           el('span', { class: 'pslug', text: r.slug })
         ]),
         el('td', { class: 'cat', text: r.cat || '—' }),
@@ -169,7 +173,7 @@
       [el('option', { value: 'all', text: 'All categories' })].concat(options('cat').map(function (c) { return el('option', { value: c, text: c, selected: state.cat === c ? '' : null }); })));
     var chain = el('select', { 'aria-label': 'Filter by chain', onchange: function (e) { state.chain = e.target.value; render(); } },
       [el('option', { value: 'all', text: 'All chains' })].concat(options('chain').map(function (c) { return el('option', { value: c, text: c, selected: state.chain === c ? '' : null }); })));
-    var seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Filter by tier' }, ['all', 'watchlist', 'early', 'rising'].map(function (t) {
+    var seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Filter by tier' }, ['all', 'watchlist', 'early', 'rising', 'emerging'].map(function (t) {
       return el('button', { 'aria-pressed': state.tier === t ? 'true' : 'false', text: t, onclick: function () { state.tier = t; render(); } });
     }));
     return el('div', { class: 'controls' }, [search, cat, chain, seg, el('span', { class: 'count', text: shown + ' / ' + total + ' rows' })]);
@@ -177,7 +181,7 @@
   function stats(rows) {
     var claims = rows.map(function (r) { return r.claim; }).sort(function (a, b) { return a - b; });
     var med = claims.length ? claims[claims.length >> 1] : 0;
-    var wl = rows.filter(function (r) { return r.tier === 'watchlist'; }).length;
+    var wl = D.rows.filter(function (r) { return r.tier === 'watchlist'; }).length;
     var rising = rows.filter(isRising).length;
     return el('div', { class: 'stats' }, [
       el('div', { class: 'stat' }, [el('div', { class: 'lbl', text: 'Pre-token rows' }), el('div', { class: 'val', text: String(rows.length) })]),
@@ -188,7 +192,8 @@
   }
   function boardView() {
     var all = scoredRows(), rows = sorted(visible(all));
-    var frag = el('div', {}, [stats(rows), controls(rows.length, all.length)]);
+    var strip = el('p', { class: 'modelstrip', text: 'implied = TVL × comp (category median mcap/TVL of live tokens, shrunk k=' + D.k.shrink_k + ', clamp 0.05–8) × growth (7d change) × maturity (tokenless age) · est. claim = implied × ' + Math.round(D.k.airdrop_share * 100) + '% airdrop ÷ wallets ≈ TVL/25K' });
+    var frag = el('div', {}, [stats(rows), strip, controls(rows.length, all.length)]);
     if (state.sandbox) frag.appendChild(el('div', { class: 'note', text: 'Sandbox what-if: ranks below use your adjusted constants, not the shipped board. Reset on the Model tab to return to radar-2 as submitted.' }));
     frag.appendChild(rows.length ? boardTable(rows) : el('div', { class: 'tablewrap' }, [el('div', { class: 'empty', text: 'No protocol matches these filters.' })]));
     frag.appendChild(el('p', { class: 'fineprint', text: 'Implied launch = the model’s conditional FDV claim if a token launched on this record; est. claim = 10% airdrop pool ÷ estimated eligible wallets. Click any row for the full breakdown and farm plan. “Records no token” is DefiLlama’s record, not proof a token cannot exist.' }));
@@ -211,7 +216,7 @@
     var p = protoOf(r), k = currentK(), comps = currentComps();
     var s = M.score(p, D.as_of, comps, k);
     var cc = comps.cats[r.cat || 'Uncategorized'];
-    var steps = P.farmSteps(p, r.age);
+    var steps = P.farmSteps(p, r.age), tot = steps.totals;
     dialog.textContent = '';
     var head = el('div', { class: 'dhead' }, [
       el('div', {}, [
@@ -255,7 +260,14 @@
       el('h3', { text: 'Where the multiple comes from' }), compKv,
       el('h3', { text: 'What a farm could pay (conditional)' }), air,
       el('p', { class: 'fineprint', text: 'Historical base rates: median airdrop ≈ 10% of supply, median payout ≈ $1,000, 10th percentile ≈ $400; wallet count drives the per-wallet share (Jito 9,852 wallets vs Starknet 1.3M). The wallet estimate is a TVL proxy, not a census. This is a conditional claim on the snapshot’s record, never a prediction that a token will issue.' }),
-      el('h3', { text: 'Farm plan — ' + steps.length + ' steps' }), stepList,
+      el('h3', { text: 'Farm plan — ' + steps.length + ' steps · conditional claim est ' + fmtUsd(s.median_claim_usd) }),
+      el('div', { class: 'airdrop' }, [
+        el('div', { class: 'cell' }, [el('div', { class: 'lbl', text: 'Setup gas & fees' }), el('div', { class: 'num', text: '$' + tot.fees_usd.toFixed(2) })]),
+        el('div', { class: 'cell' }, [el('div', { class: 'lbl', text: 'Capital in position' }), el('div', { class: 'num', text: fmtUsd(tot.capital_usd) })]),
+        el('div', { class: 'cell' }, [el('div', { class: 'lbl', text: 'Active setup time' }), el('div', { class: 'num', text: fmtMin(tot.active_min) })]),
+        el('div', { class: 'cell' }, [el('div', { class: 'lbl', text: 'Hold window' }), el('div', { class: 'num', text: tot.hold_days + ' days' })])
+      ]),
+      stepList,
       el('div', { class: 'note risk', text: P.riskNote(r.cat) }),
       el('p', { class: 'fineprint', text: 'A real airdrop never asks you to pay to claim. Verify every link against the protocol’s own docs; comments and DMs are not sources.' })
     ]);
@@ -291,7 +303,9 @@
     ['Airdrops.io — OnRe (ONyc points, updated Nov 2026) and Upshift (live vault points campaign) eligibility guides.', 'airdrops.io/onre · airdrops.io/upshift'],
     ['Doppler Finance — XDP airdrop page; XRP/RLUSD vaults pay the return in the deposited asset.', 'doppler.finance'],
     ['DefiLlama — /protocols API and methodology: TVL, mcap, parentProtocol and category semantics the snapshot carries.', 'api-docs.defillama.com · docs.llama.fi'],
-    ['Galaxy Research — Crypto Points Programs: points as pre-token distribution and their failure modes.', 'galaxy.com/insights/research/crypto-points-programs']
+    ['Galaxy Research — Crypto Points Programs: points as pre-token distribution and their failure modes.', 'galaxy.com/insights/research/crypto-points-programs'],
+    ['DeSpread Research — point valuation framework (Gomble case): a point’s price is the expected airdrop value times the accrual share; pre-market point trades reveal an implied FDV.', 'research.despread.io/airdrop-valuation-gomble'],
+    ['DL News — high-FDV airdrops flop: KMNO fell 63% within an hour of launch, REZ sold off; a launch FDV claim must stay conditional.', 'dlnews.com/articles/defi/vcs-blame-airdrop-flops-on-high-fdv-tokens-and-manipulation/']
   ];
   function modelView() {
     var k = currentK();
@@ -354,6 +368,7 @@
         el('span', { class: 'chip' }, [el('b', { text: String(D.board_size) }), ' rows']),
         el('span', { class: 'chip' }, ['watchlist ', el('b', { text: D.watchlist_size + '/' + D.watchlist_size })]),
         el('span', { class: 'chip' }, [el('b', { text: String(D.early_size) }), ' early']),
+        el('span', { class: 'chip' }, [el('b', { text: String(D.rows.filter(isEmerging).length) }), ' emerging']),
         el('span', { class: 'chip' }, ['as of ', el('b', { text: D.as_of })])
       ])
     ]);

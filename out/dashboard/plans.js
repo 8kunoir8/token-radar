@@ -54,51 +54,51 @@
     var core;
     if (c.indexOf('curator') >= 0 || c.indexOf('allocator') >= 0 || c.indexOf('yield') >= 0) {
       core = [
-        ['Deposit ' + money(cap) + ' of the vault\'s benchmark asset (USDC or wETH) into a ' + name + '-curated vault and keep the shares; curator vaults pass through the underlying protocol\'s own points where one runs.', money(cap) + ' capital + ' + g2 + ' gas', '20 minutes'],
-        ['Check the vault\'s curator page and the underlying market (e.g. Morpho or Euler) for a points or rewards program layered on the same deposit; one deposit can earn two programs.', 'no extra fee to check', '10 minutes']
+        ['Deposit ' + money(cap) + ' of the vault\'s benchmark asset (USDC or wETH) into a ' + name + '-curated vault and keep the shares; curator vaults pass through the underlying protocol\'s own points where one runs.', money(cap) + ' capital + ' + g2 + ' gas', '20 minutes', gas * 2, 20],
+        ['Check the vault\'s curator page and the underlying market (e.g. Morpho or Euler) for a points or rewards program layered on the same deposit; one deposit can earn two programs.', 'no extra fee to check', '10 minutes', 0, 10]
       ];
     } else if (c.indexOf('lend') >= 0 || c.indexOf('cdp') >= 0 || c.indexOf('collateral') >= 0) {
       core = [
-        ['Supply ' + money(cap) + ' of USDC to ' + name + ' on ' + chain + ', then borrow a small amount (20-30% LTV) of the same asset to register borrow activity without taking a liquidation risk on a stable pair.', money(cap) + ' capital + ' + g2 + ' gas', '20 minutes'],
-        ['Repay and re-borrow once a month so the position shows sustained usage, and watch the health factor stay above 2.', gW + ' gas a month', '10 minutes a month']
+        ['Supply ' + money(cap) + ' of USDC to ' + name + ' on ' + chain + ', then borrow a small amount (20-30% LTV) of the same asset to register borrow activity without taking a liquidation risk on a stable pair.', money(cap) + ' capital + ' + g2 + ' gas', '20 minutes', gas * 2, 20],
+        ['Repay and re-borrow once a month so the position shows sustained usage, and watch the health factor stay above 2.', gW + ' gas a month', '10 minutes a month', gas * 3, 10]
       ];
     } else if (c.indexOf('dex') >= 0 || c.indexOf('derivative') >= 0 || c.indexOf('perpetual') >= 0 || c.indexOf('basis') >= 0) {
       core = [
-        ['Deposit ' + money(cap) + ' of USDC as margin or liquidity on ' + name + ' (' + chain + ') and run one small trade or LP position each week; volume-weighted programs count turnover, not idle balance.', money(cap) + ' capital + ' + g2 + ' gas', '20 minutes'],
-        ['Keep weekly turnover around ' + money(cap * 2) + ' (two turns of the position) and log the fees paid; wash volume between your own wallets is sybil-flagged, so trade the real market.', gW + ' gas a week', '15 minutes a week']
+        ['Deposit ' + money(cap) + ' of USDC as margin or liquidity on ' + name + ' (' + chain + ') and run one small trade or LP position each week; volume-weighted programs count turnover, not idle balance.', money(cap) + ' capital + ' + g2 + ' gas', '20 minutes', gas * 2, 20],
+        ['Keep weekly turnover around ' + money(cap * 2) + ' (two turns of the position) and log the fees paid; wash volume between your own wallets is sybil-flagged, so trade the real market.', gW + ' gas a week', '15 minutes a week', gas * 3, 15]
       ];
     } else if (c.indexOf('rwa') >= 0) {
       core = [
-        ['Mint ' + money(cap) + ' of ' + name + '\'s yield-bearing asset on ' + chain + ' (complete any KYC gate first if the product requires it) and hold the token in the farming wallet.', money(cap) + ' capital + ' + g2 + ' gas', '30 minutes'],
-        ['Hold through at least one yield distribution so the wallet shows a settled balance, not a mint-and-dump pattern.', 'the ' + money(cap) + ' stays minted', hold + ' days']
+        ['Mint ' + money(cap) + ' of ' + name + '\'s yield-bearing asset on ' + chain + ' (complete any KYC gate first if the product requires it) and hold the token in the farming wallet.', money(cap) + ' capital + ' + g2 + ' gas', '30 minutes', gas * 2, 30],
+        ['Hold through at least one yield distribution so the wallet shows a settled balance, not a mint-and-dump pattern.', 'the ' + money(cap) + ' stays minted', hold + ' days', 0, 0]
       ];
     } else if (c.indexOf('restak') >= 0 || c.indexOf('staking') >= 0) {
       core = [
-        ['Stake ' + money(cap) + ' of the chain\'s staking asset through ' + name + ' on ' + chain + ' and keep the receipt token in the farming wallet; delegate to a network or validator where the app asks.', money(cap) + ' capital + ' + g2 + ' gas', '20 minutes']
+        ['Stake ' + money(cap) + ' of the chain\'s staking asset through ' + name + ' on ' + chain + ' and keep the receipt token in the farming wallet; delegate to a network or validator where the app asks.', money(cap) + ' capital + ' + g2 + ' gas', '20 minutes', gas * 2, 20]
       ];
     } else if (c.indexOf('bridge') >= 0) {
       core = [
-        ['Bridge ' + money(cap) + ' of USDC to ' + chain + ' through ' + name + ' and use the bridged funds in one app on the destination chain; bridge programs count volume and distinct destinations.', money(cap) + ' capital + ' + money(gas * 3) + ' fees', '20 minutes']
+        ['Bridge ' + money(cap) + ' of USDC to ' + chain + ' through ' + name + ' and use the bridged funds in one app on the destination chain; bridge programs count volume and distinct destinations.', money(cap) + ' capital + ' + money(gas * 3) + ' fees', '20 minutes', gas * 3, 20]
       ];
     } else if (c.indexOf('insurance') >= 0) {
       core = [
-        ['Buy ' + money(cap) + ' of cover from ' + name + ' on ' + chain + ' for a position you already hold, and keep the policy active; insurance programs count premium paid and cover duration.', money(cap) + ' premium + ' + g2 + ' gas', '20 minutes']
+        ['Buy ' + money(cap) + ' of cover from ' + name + ' on ' + chain + ' for a position you already hold, and keep the policy active; insurance programs count premium paid and cover duration.', money(cap) + ' premium + ' + g2 + ' gas', '20 minutes', cap + gas * 2, 20]
       ];
     } else if (c.indexOf('payment') >= 0 || c.indexOf('chain') >= 0) {
       core = [
-        ['Move ' + money(cap) + ' through ' + name + ' on ' + chain + ': fund the wallet, make one real payment or transfer a week, and keep a settled balance between transfers.', money(cap) + ' capital + ' + gW + ' fees a week', '15 minutes a week']
+        ['Move ' + money(cap) + ' through ' + name + ' on ' + chain + ': fund the wallet, make one real payment or transfer a week, and keep a settled balance between transfers.', money(cap) + ' capital + ' + gW + ' fees a week', '15 minutes a week', gas * 3, 15]
       ];
     } else if (c.indexOf('stable') >= 0 || c.indexOf('cedefi') >= 0) {
       core = [
-        ['Mint or deposit ' + money(cap) + ' of the stable asset through ' + name + ' on ' + chain + ' and hold it in the farming wallet; wrapper and CeDeFi programs count minted supply and hold time.', money(cap) + ' capital + ' + g2 + ' gas', '20 minutes']
+        ['Mint or deposit ' + money(cap) + ' of the stable asset through ' + name + ' on ' + chain + ' and hold it in the farming wallet; wrapper and CeDeFi programs count minted supply and hold time.', money(cap) + ' capital + ' + g2 + ' gas', '20 minutes', gas * 2, 20]
       ];
     } else if (c.indexOf('governance') >= 0 || c.indexOf('incentive') >= 0) {
       core = [
-        ['Deposit ' + money(cap) + ' into ' + name + '\'s incentive vault on ' + chain + ' and vote or gauge-lock where the app offers it; governance-incentive programs weight locked balances and votes.', money(cap) + ' capital + ' + g2 + ' gas', '20 minutes']
+        ['Deposit ' + money(cap) + ' into ' + name + '\'s incentive vault on ' + chain + ' and vote or gauge-lock where the app offers it; governance-incentive programs weight locked balances and votes.', money(cap) + ' capital + ' + g2 + ' gas', '20 minutes', gas * 2, 20]
       ];
     } else {
       core = [
-        ['Deposit ' + money(cap) + ' of USDC into ' + name + ' on ' + chain + ' through its main app and keep the position open; use the product\'s core action, not a bare transfer.', money(cap) + ' capital + ' + g2 + ' gas', '20 minutes']
+        ['Deposit ' + money(cap) + ' of USDC into ' + name + ' on ' + chain + ' through its main app and keep the position open; use the product\'s core action, not a bare transfer.', money(cap) + ' capital + ' + g2 + ' gas', '20 minutes', gas * 2, 20]
       ];
     }
     return core;
@@ -125,16 +125,20 @@
   // exists, the qualifying hold, weekly activity, claim safety and the farm log.
   function farmSteps(p, age) {
     var chain = chainOf(p), gas = gasOf(chain), cap = capitalFor(p.tvl_usd), hold = holdDaysFor(age);
+    var fees = 0, mins = 0;
+    function add(text, cost, time, fee, min) { fees += fee; mins += min; return stepText(text, cost, time); }
     var steps = [
-      stepText('Create a dedicated farming wallet for ' + p.name + ', fund it only with the farm capital plus gas, and keep the seed phrase offline; never reuse a wallet that holds your savings.', 'under ' + money(gas) + ' of gas for the first transaction', '5 minutes')
+      add('Create a dedicated farming wallet for ' + p.name + ', fund it only with the farm capital plus gas, and keep the seed phrase offline; never reuse a wallet that holds your savings.', 'under ' + money(gas) + ' of gas for the first transaction', '5 minutes', gas, 5)
     ];
-    playbook(p.category, p.name, chain, cap, gas, hold).forEach(function (s) { steps.push(stepText(s[0], s[1], s[2])); });
+    playbook(p.category, p.name, chain, cap, gas, hold).forEach(function (s) { steps.push(add(s[0], s[1], s[2], s[3], s[4])); });
     var f = FACTS[p.slug];
-    if (f) steps.push(stepText('Protocol note: ' + f.note + ' Source: ' + f.src + '.', 'no fee to read the docs', '10 minutes'));
-    steps.push(stepText('Hold the position at least ' + hold + ' days so the wallet appears in several snapshots; time-weighted programs (Noble-style multipliers) pay more for longer holds.', 'the ' + money(cap) + ' stays in the position', hold + ' days'));
-    steps.push(stepText('Make one qualifying action each week (deposit, borrow, swap, vote or claim rewards) and record it; sybil filters reward steady distinct activity over burst volume.', 'about ' + money(Math.max(0.05, gas * 3)) + ' of gas a week', '10 minutes a week'));
-    steps.push(stepText('Before any claim, open the protocol\'s own points or rewards page from its official docs or app, never a link from a comment or DM; a real airdrop never asks you to pay to claim.', 'free to check; never pay to claim', '10 minutes'));
-    steps.push(stepText('Log the wallet, dates, deposits and every transaction hash in a farm sheet so you can prove eligibility, repeat the position next season, or unwind cleanly and revoke approvals.', 'nothing but the log', '5 minutes'));
+    if (f) steps.push(add('Protocol note: ' + f.note + ' Source: ' + f.src + '.', 'no fee to read the docs', '10 minutes', 0, 10));
+    steps.push(add('Hold the position at least ' + hold + ' days so the wallet appears in several snapshots; time-weighted programs (Noble-style multipliers) pay more for longer holds.', 'the ' + money(cap) + ' stays in the position', hold + ' days', 0, 0));
+    steps.push(add('Make one qualifying action each week (deposit, borrow, swap, vote or claim rewards) and record it; sybil filters reward steady distinct activity over burst volume.', 'about ' + money(Math.max(0.05, gas * 3)) + ' of gas a week', '10 minutes a week', Math.max(0.05, gas * 3), 10));
+    steps.push(add('Before any claim, open the protocol\'s own points or rewards page from its official docs or app, never a link from a comment or DM; a real airdrop never asks you to pay to claim.', 'free to check; never pay to claim', '10 minutes', 0, 10));
+    steps.push(add('Log the wallet, dates, deposits and every transaction hash in a farm sheet so you can prove eligibility, repeat the position next season, or unwind cleanly and revoke approvals.', 'nothing but the log', '5 minutes', 0, 5));
+    // Setup economics ride on the array (JSON.stringify drops them, so board.json stays plain strings).
+    steps.totals = { fees_usd: Math.round(fees * 100) / 100, capital_usd: cap, active_min: mins, hold_days: hold };
     return steps;
   }
 

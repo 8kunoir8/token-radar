@@ -99,6 +99,9 @@ tr.top .rank { border-color: var(--green-dim); color: var(--green); }
 .dot.watchlist { background: var(--green); } .dot.early { background: var(--cyan); } .dot.listed { background: var(--muted); }
 .rising { display: inline-block; margin-left: var(--s2); font: 600 9px/1 var(--mono); letter-spacing: 0.08em; color: var(--amber);
   border: 1px solid rgba(255, 180, 84, 0.4); border-radius: 4px; padding: 3px 5px; text-transform: uppercase; }
+.rising.new { color: var(--cyan); border-color: rgba(86, 200, 216, 0.4); }
+.modelstrip { margin: 0 0 var(--s4); padding: var(--s3) var(--s4); border: 1px solid var(--line); border-left: 3px solid var(--green);
+  border-radius: 6px; background: var(--panel-2); font: 12px/1.6 var(--mono); color: var(--muted); }
 .cat { color: var(--muted); font-size: 12px; white-space: nowrap; }
 .chains { color: var(--faint); font: 11px var(--mono); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .up { color: var(--green); } .down { color: var(--red); } .flat { color: var(--faint); }
