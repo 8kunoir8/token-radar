@@ -10,10 +10,7 @@
 //   claim     = implied * airdrop_share / wallets_est                      (median farmer estimate)
 //   wallets   = clamp(round(TVL / 25000), 1000, 1500000)                   (eligible-wallet proxy)
 //
-// Calibration references (see RESEARCH.md): median historical airdrop ~10% of supply
-// (EarlyThunder 2026, 12 drops; Arbitrum DAO ~11%; Hyperliquid 31% is the outlier), median payout
-// ~$1000 and 10th percentile ~$400, wallet count drives the per-wallet share (Jito 9,852 wallets
-// vs Starknet 1.3M). The model states a conditional launch value, never a prediction of issuance.
+// band = implied FDV at the category's p10/p90 live mcap/TVL; snapshot dispersion. Calibration refs in RESEARCH.md.
 (function (root) {
   'use strict';
 
@@ -49,6 +46,7 @@
     return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
   }
   function round4(n) { return Math.round(n * 1e4) / 1e4; }
+  function q(xs, t) { var i = (xs.length - 1) * t, l = Math.floor(i); return xs[l] + (xs[Math.ceil(i)] - xs[l]) * (i - l); }
 
   function ageDays(asOf, listedAt) {
     if (!listedAt) return null;
@@ -59,16 +57,13 @@
 
   function isPreToken(p) { return p.mcap_usd === null && p.gecko_id === null && p.symbol === null; }
 
-  // The watchlist's own name/category rule, applied below the floor where DefiLlama's parentProtocol
-  // record is not in the snapshot. Above the floor the watchlist itself is authoritative: it already
-  // carries the parent-product exclusions the ten-field snapshot cannot show.
+  // Below the floor DefiLlama's parent record is absent; the watchlist's own name/category rule decides.
   function isRankable(p) {
     return isPreToken(p) && !PRODUCT_CATS[p.category] && !VERSIONED.test(p.name) &&
       !PRODUCT_WORDS.test(p.name) && !EXCHANGE.test(p.name);
   }
 
-  // Category comparables from the snapshot's live-token protocols: mcap/TVL medians, shrunk toward
-  // the global median so a one-protocol category cannot set a wild multiple.
+  // Category mcap/TVL medians, shrunk toward the global median so one protocol cannot set a wild multiple.
   function buildComps(protocols, k) {
     var kk = finite(k, K.shrink_k);
     var ratios = [], byCat = {};
@@ -82,22 +77,27 @@
       }
     }
     var global = median(ratios) || 0.2;
+    var glo = q(ratios, 0.1), ghi = q(ratios, 0.9);
     var cats = {};
     Object.keys(byCat).sort().forEach(function (c) {
-      var xs = byCat[c], med = median(xs);
+      var xs = byCat[c].slice().sort(function (x, y) { return x - y; }), med = median(xs);
       var shrunk = (xs.length * med + kk * global) / (xs.length + kk);
-      cats[c] = { n: xs.length, median: round4(med), multiple: round4(clamp(shrunk, K.mult_floor, K.mult_cap)) };
+      cats[c] = { n: xs.length, median: round4(med), multiple: round4(clamp(shrunk, K.mult_floor, K.mult_cap)),
+        lo: round4(clamp(q(xs, 0.1), K.mult_floor, K.mult_cap)), hi: round4(clamp(q(xs, 0.9), K.mult_floor, K.mult_cap)) };
     });
-    return { global: round4(global), live_n: ratios.length, shrink_k: kk, cats: cats };
+    return { global: round4(global), glo: round4(glo), ghi: round4(ghi), live_n: ratios.length, shrink_k: kk, cats: cats };
   }
 
   function compFor(comps, category) {
     var c = comps.cats[category || 'Uncategorized'];
     return c ? c.multiple : comps.global;
   }
+  function compBandFor(comps, category) {
+    var c = comps.cats[category || 'Uncategorized'];
+    return c && c.n >= 4 ? [c.lo, c.hi] : [comps.glo, comps.ghi];
+  }
 
-  // The board's membership: every watchlist slug (the floor) plus every rankable pre-token protocol
-  // below the floor (the early radar the owner asked for: find launches before they are obvious).
+  // Membership: every watchlist slug (the floor) plus every rankable pre-token below it.
   function selectRows(snapshot) {
     var wl = {}, chosen = [];
     snapshot.watchlist.forEach(function (s) { wl[s] = 1; });
@@ -118,14 +118,17 @@
     var ageFor = age === null ? kk.unknown_age_days : age;
     var mm = kk.maturity_floor + (clamp(ageFor, 0, kk.maturity_days) / kk.maturity_days) * kk.maturity_range;
     var mult = compFor(comps, p.category);
+    var band = compBandFor(comps, p.category);
     var implied = Math.max(1, Math.round(p.tvl_usd * mult * gm * mm));
+    var implied_lo = Math.max(1, Math.round(p.tvl_usd * band[0] * gm * mm));
+    var implied_hi = Math.max(1, Math.round(p.tvl_usd * band[1] * gm * mm));
     var wallets = clamp(Math.round(p.tvl_usd / kk.tvl_per_wallet), kk.wallets_min, kk.wallets_max);
     var pool = implied * kk.airdrop_share;
     var claim = Math.max(1, Math.round(pool / wallets));
     return {
       age: age, growth_pct: round4(g), growth_mult: round4(gm), maturity_mult: round4(mm),
-      comp_multiple: mult, implied: implied, wallets_est: wallets,
-      airdrop_pool_usd: Math.round(pool), median_claim_usd: claim
+      comp_multiple: mult, implied: implied, implied_lo: implied_lo, implied_hi: implied_hi,
+      wallets_est: wallets, airdrop_pool_usd: Math.round(pool), median_claim_usd: claim
     };
   }
 
@@ -134,7 +137,7 @@
     return p.tvl_usd < floor ? 'early' : 'listed';
   }
 
-  // Full ranked board: ranks 1..N, implied value never rising as rank ascends, slug tie-break.
+  // Ranked board: rank 1..N, implied never rising as rank ascends, slug tie-break.
   function buildBoard(snapshot, k) {
     var kk = k || K;
     var comps = buildComps(snapshot.protocols, kk.shrink_k);

@@ -45,6 +45,8 @@ interface Score {
   maturity_mult: number;
   comp_multiple: number;
   implied: number;
+  implied_lo: number;
+  implied_hi: number;
   wallets_est: number;
   airdrop_pool_usd: number;
   median_claim_usd: number;
@@ -71,6 +73,7 @@ interface BoardRow {
   token_status: 'pre-token'; tier: string; age_days: number | null; implied_value_usd: number;
   model: {
     version: string; comp_category: string; comp_multiple: number; growth_pct: number;
+    band_lo: number; band_hi: number;
     growth_multiplier: number; maturity_multiplier: number; airdrop_share: number;
     wallets_est: number; airdrop_pool_usd: number; median_claim_usd: number;
   };
@@ -162,6 +165,7 @@ const board: BoardRow[] = rows.map((r) => {
       version: M.VERSION,
       comp_category: p.category || 'Uncategorized',
       comp_multiple: s.comp_multiple,
+      band_lo: s.implied_lo, band_hi: s.implied_hi,
       growth_pct: s.growth_pct,
       growth_multiplier: s.growth_mult,
       maturity_multiplier: s.maturity_mult,
@@ -243,6 +247,7 @@ const radar = {
     rank: r.rank, slug: r.slug, name: r.name, cat: r.category, chains: r.chains, tvl: r.tvl_usd,
     g7: r.change_7d, listed: r.listed_at, age: r.age_days, tier: r.tier, implied: r.implied_value_usd,
     mult: r.model.comp_multiple, gm: r.model.growth_multiplier, mm: r.model.maturity_multiplier,
+    lo: r.model.band_lo, hi: r.model.band_hi,
     claim: r.model.median_claim_usd, wallets: r.model.wallets_est, pool: r.model.airdrop_pool_usd
   })),
   live
