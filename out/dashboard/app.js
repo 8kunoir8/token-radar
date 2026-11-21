@@ -196,7 +196,7 @@
     var frag = el('div', {}, [stats(rows), strip, controls(rows.length, all.length)]);
     if (state.sandbox) frag.appendChild(el('div', { class: 'note', text: 'Sandbox what-if: ranks below use your adjusted constants. Reset on the Model tab.' }));
     frag.appendChild(rows.length ? boardTable(rows) : el('div', { class: 'tablewrap' }, [el('div', { class: 'empty', text: 'No protocol matches these filters.' })]));
-    frag.appendChild(el('p', { class: 'fineprint', text: 'Conditional FDV claim on this record, not a prediction; claim = 10% pool ÷ est. wallets. Click a row for breakdown + farm plan.' }));
+    frag.appendChild(el('p', { class: 'fineprint', text: 'Conditional FDV claim on this record, not a prediction. Click a row for breakdown + farm plan.' }));
     return frag;
   }
 
@@ -240,6 +240,7 @@
       el('dt', { text: 'Comp category' }), el('dd', { text: (r.cat || 'Uncategorized') + (cc ? ' — ' + cc.n + ' live protocols' : ' — no live comp; global median') }),
       el('dt', { text: 'Raw median mcap/TVL' }), el('dd', { text: cc ? '×' + cc.median.toFixed(3) : '×' + comps.global.toFixed(3) + ' (global)' }),
       el('dt', { text: 'Shrunk (k=' + comps.shrink_k + ')' }), el('dd', { text: '×' + s.comp_multiple.toFixed(3) + ', clamped [0.05, 8]' }),
+      el('dt', { text: 'p10–p90 band' }), el('dd', { text: fmtUsd(s.implied_lo) + '–' + fmtUsd(s.implied_hi) + ' FDV (category comps)' }),
       el('dt', { text: 'Listed / age' }), el('dd', { text: (r.listed || 'unknown') + ' · ' + (r.age === null ? 'age unknown → 365d' : r.age + ' days') })
     ]);
     var air = el('div', { class: 'airdrop' }, [
@@ -259,8 +260,8 @@
       el('h3', { text: 'Value breakdown — radar-2' }), calc,
       el('h3', { text: 'Where the multiple comes from' }), compKv,
       el('h3', { text: 'What a farm could pay (conditional)' }), air,
-      el('p', { class: 'fineprint', text: 'Base rates: median airdrop ≈ 10% of supply, median payout ≈ $1,000; wallets est. is a TVL proxy, not a census (Jito 9,852 vs Starknet 1.3M wallets).' }),
-      el('h3', { text: 'Farm plan — ' + steps.length + ' steps · p50 claim ' + fmtUsd(s.median_claim_usd) }),
+      el('p', { class: 'fineprint', text: 'Base rates: median airdrop ≈ 10% of supply; wallets est. is a TVL proxy, not a census (Jito 9,852 vs Starknet 1.3M).' }),
+      el('h3', { text: 'Farm plan — ' + steps.length + ' steps · p50 claim ' + fmtUsd(s.median_claim_usd) + ' · FDV band ' + fmtUsd(s.implied_lo) + '–' + fmtUsd(s.implied_hi) }),
       el('div', { class: 'airdrop' }, [
         el('div', { class: 'cell' }, [el('div', { class: 'lbl', text: 'Setup gas & fees' }), el('div', { class: 'num', text: '$' + tot.fees_usd.toFixed(2) })]),
         el('div', { class: 'cell' }, [el('div', { class: 'lbl', text: 'Capital in position' }), el('div', { class: 'num', text: fmtUsd(tot.capital_usd) })]),
